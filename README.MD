@@ -10,10 +10,10 @@
 ```
 ☁  redis  python hackredis.py                                  
 usage: hackredis.py [-h] [-l IPLIST] [-p PORT] [-r ID_RSAFILE] [-sp SSH_PORT]
-
+                    [-pk PRIVATE_KEY]
 For Example:
 -----------------------------------------------------------------------------
-python hackredis.py  -l ip.txt -p 6379 -r foo.txt -sp 22
+python hackredis.py  -l ip.txt -p 6379 -r foo.txt -sp 22 -pk /tmp/key
 
 optional arguments:
   -h, --help     show this help message and exit
@@ -21,6 +21,7 @@ optional arguments:
   -p PORT        the redis default port
   -r ID_RSAFILE  the ssh id_rsa file you generate
   -sp SSH_PORT   the ssh port
+  -pk PRIVATE_KEY  the ssh private key
 ```
 
 首先需要ssh密钥:
